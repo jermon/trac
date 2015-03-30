@@ -1,0 +1,23 @@
+---
+
+  - name: trac plugins
+    easy_install: name={{item}}
+    with_items:
+    - http://trac-hacks.org/svn/revtreeplugin/0.12/
+
+  - name: trac inifile
+    ini_file: dest={{cm_prefix}}/{{cm_project}}/trac/conf/trac.ini
+            section={{item.section}} option={{item.option}} value={{item.value}}
+    with_items:
+      - { section: components, option: revtree.*, value: enabled }
+      - { section: trac,       option: base_url,  value: http://94.246.95.159:37022/trac/{{cm_project}} }
+      - { section: revtree,    option: branch_re, value: ^(?P<branch>branches/[^/]+|trunk|tags)(?:/(?P<path>.*))?$ }
+      - { section: revtree,    option: trunks,    value: trunk }
+      - { section: revtree,    option: scale,     value: 1.0 }
+      - { section: revtree,    option: revbase,   value: 1 }
+      - { section: revtree,    option: abstime,   value: True }
+      - { section: revtree,    option: style,     value: compact }
+      - { section: revtree,    option: contexts,  value:  }
+    notify: restart apache
+
+

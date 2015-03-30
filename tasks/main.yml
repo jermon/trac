@@ -1,0 +1,112 @@
+---
+
+  - name: yum install trac precond packages
+    yum: name={{ item }} state=latest
+    with_items:
+      - python-setuptools 
+      - python-genshi 
+      - python-pygments 
+      - mod_wsgi 
+      - graphviz 
+      - mod_ssl 
+
+  - name: install pip
+    easy_install: name=pip
+
+  - name: pip install Genshi
+    pip: name=Genshi version=0.6
+
+  - name: pip install Trac
+    pip: name=Trac
+
+  - name: trac plugins
+    easy_install: name={{item}}
+    with_items:
+    - http://trac-hacks.org/svn/tracwysiwygplugin/0.12
+    - http://trac-hacks.org/svn/tracworkflowadminplugin/0.12
+    - http://trac-hacks.org/svn/masterticketsplugin/trunk/
+    - http://trac-hacks.org/svn/tagsplugin/trunk
+    - http://trac-hacks.org/svn/xmlrpcplugin/trunk
+    - http://trac-hacks.org/svn/hudsontracplugin
+
+
+  - name: trac initenv
+    command: trac-admin {{cm_prefix}}/{{cm_project}}/trac initenv {{cm_project}} sqlite:db/trac.d 
+             creates={{cm_prefix}}/{{cm_project}}/trac
+
+  - name: trac add admin user
+    command: trac-admin {{cm_prefix}}/{{cm_project}}/trac permission add admin TRAC_ADMIN
+
+  - name: remove /tmp/deploy
+    file: path=/tmp/deploy state=absent
+
+  - name: trac deploy
+    command: trac-admin {{cm_prefix}}/{{cm_project}}/trac deploy /tmp/deploy
+
+  - name: move /tmp/deploy
+    command: mv /tmp/deploy {{cm_prefix}}/{{cm_project}}/deploy creates={{cm_prefix}}/{{cm_project}}/deploy
+
+  - name: cp trac.wsgi
+    command: cp {{cm_prefix}}/{{cm_project}}/deploy/cgi-bin/trac.wsgi /var/www/cgi-bin/{{cm_project}}.trac.wsgi 
+             creates=/var/www/cgi-bin/{{cm_project}}.trac.wsgi
+
+  - name: create webaccess
+    template: src=trac.j2 dest=/etc/httpd/conf.d/{{cm_project}}_trac.conf
+    notify: restart apache
+
+  - name: Trac logo
+    copy: src=trac_logo.png dest={{cm_prefix}}/{{cm_project}}/trac/htdocs/trac_logo.png owner=root group=root mode=644
+
+  - name: create dir /var/www/{{cm_project}}
+    file: path=/var/www/{{cm_project}} owner=root group=root state=directory mode=755
+
+  - name: cp htdocs
+    command: cp -r {{cm_prefix}}/{{cm_project}}/deploy/htdocs /var/www/{{cm_project}}/trac/ creates=/var/www/{{cm_project}}/trac/
+
+  - name: cp trac.ini
+    command: cp {{cm_prefix}}/{{cm_project}}/trac/conf/trac.ini {{cm_prefix}}/{{cm_project}}/trac/conf/trac.ini.org 
+             creates={{cm_prefix}}/{{cm_project}}/trac/conf/trac.ini.org
+
+  - name: trac inifile
+    ini_file: dest={{cm_prefix}}/{{cm_project}}/trac/conf/trac.ini
+            section={{item.section}} option={{item.option}} value={{item.value}}
+    with_items:
+      - { section: components,    option: tracopt.versioncontrol.svn.*, value: enabled }
+      - { section: components,    option: tracopt.ticket.commit_updater.committicketreferencemacro, value: enabled }
+      - { section: components,    option: tracopt.ticket.commit_updater.committicketupdater,        value: enabled }
+      - { section: ticket,        option: commit_ticket_update_envelope,                            value: [] }
+      - { section: ticket,        option: commit_ticket_update_commands.close,                      value: 'close\ closed\ closes\ fix\ fixed\ fixes' }
+      - { section: ticket,        option: commit_ticket_update_commands.refs,                       value: <ALL> }
+      - { section: ticket,        option: commit_ticket_update_check_perms,                         value: true }
+      - { section: ticket,        option: commit_ticket_update_notify,                              value: true }
+      - { section: components,    option: tracwysiwyg.*,                                            value: enabled }
+      - { section: components,    option: tracworkflowadmin.*,     value: enabled }
+      - { section: components,    option: mastertickets.*,         value: enabled }
+      - { section: components,    option: extendedversion.*,       value: enabled }
+      - { section: components,    option: hudsontrac.*,            value: enabled }
+      - { section: components,    option: tractags.*,              value: enabled }
+      - { section: components,    option: tracrpc.*,               value: enabled }
+      - { section: header_logo,   option: alt,                     value: RedBridge }
+      - { section: header_logo,   option: src,                     value: site/trac_logo.png }
+      - { section: trac,          option: repository_dir,          value: "{{cm_prefix}}/{{cm_project}}/svn" }
+      - { section: ticket-custom, option: blocking,                value: text }
+      - { section: ticket-custom, option: blocking.label,          value: Blocking }
+      - { section: ticket-custom, option: blockedby,               value: text }
+      - { section: ticket-custom, option: blockedby.label,         value: 'Blocked\ by' }
+      - { section: hudson,        option: job_url,                 value: "http://localhost/jenkins/" }
+      - { section: hudson,        option: main_page,               value: /jenkins/ }
+      - { section: hudson,        option: alternate_success_icon,  value: true }
+      - { section: tags,          option: ignore_closed_tickets,   value: true }
+      - { section: tags,          option: ticket_fields,           value: 'component,keywords,milestone' }      
+    notify: restart apache
+
+  - name: trac upgrade
+    command: trac-admin {{cm_prefix}}/{{cm_project}}/trac upgrade
+
+  - name: trac wiki upgrade
+    command: trac-admin {{cm_prefix}}/{{cm_project}}/trac wiki upgrade
+
+  - name: chown dir
+    file: path={{cm_prefix}}/{{cm_project}} recurse=yes owner=apache group=apache
+
+

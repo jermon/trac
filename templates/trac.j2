@@ -1,0 +1,21 @@
+
+Alias /chrome/common /var/www/{{cm_project}}/trac/htdocs/common
+Alias /chrome/site /var/www/{{cm_project}}/trac/htdocs/site
+
+WSGIScriptAlias /trac/{{cm_project}} /var/www/cgi-bin/{{cm_project}}.trac.wsgi
+
+<Directory /var/www/cgi-bin>
+  WSGIApplicationGroup %{GLOBAL}
+  Order deny,allow
+  Allow from all
+</Directory>
+
+<Location "/trac/{{cm_project}}/login">
+  AuthType Basic
+  AuthName "{{cm_project}}"
+  AuthUserFile {{cm_prefix}}/{{cm_project}}/htpasswd
+  Require valid-user
+</Location>
+
+
+
