@@ -22,12 +22,12 @@
   - name: trac plugins
     easy_install: name={{item}}
     with_items:
-    - http://trac-hacks.org/svn/tracwysiwygplugin/0.12
-    - http://trac-hacks.org/svn/tracworkflowadminplugin/0.12
-    - http://trac-hacks.org/svn/masterticketsplugin/trunk/
-    - http://trac-hacks.org/svn/tagsplugin/trunk
-    - http://trac-hacks.org/svn/xmlrpcplugin/trunk
-    - http://trac-hacks.org/svn/hudsontracplugin
+    - https://trac-hacks.org/svn/tracwysiwygplugin/0.12
+    - https://trac-hacks.org/svn/tracworkflowadminplugin/0.12
+    - https://trac-hacks.org/svn/masterticketsplugin/trunk/
+    - https://trac-hacks.org/svn/tagsplugin/trunk
+    - https://trac-hacks.org/svn/xmlrpcplugin/trunk
+    - https://trac-hacks.org/svn/hudsontracplugin
 
 
   - name: trac initenv
